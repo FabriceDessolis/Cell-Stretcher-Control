@@ -42,6 +42,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         self.pad = NumberPad()
+        self.pad.setWindowModality(Qt.ApplicationModal)
         self.pad.closeWidget.connect(self.hide_numberpad)
 
         self.listWidget = ListWidget()
@@ -122,6 +123,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def show_numberpad(self):
         self.pad.show()
+        self.pad.move(self.pos() + QPoint(200, 70))
 
     def hide_numberpad(self):
         self.pad.hide()
