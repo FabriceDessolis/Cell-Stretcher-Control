@@ -1,0 +1,15 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>icons/ramp.svg</file>
+    <file>icons/ramp_s.svg</file>
+    <file>icons/index.png</file>
+    <file>icons/hold_up.svg</file>
+    <file>icons/hold_up_s.svg</file>
+    <file>icons/hold_down.svg</file>
+    <file>icons/hold_down_s.svg</file>
+    <file>icons/cyclic.svg</file>
+    <file>icons/cyclic_s.svg</file>
+    <file>icons/cyclic_ramp.svg</file>
+    <file>icons/cyclic_ramp_s.svg</file>
+  </qresource>
+</RCC>
