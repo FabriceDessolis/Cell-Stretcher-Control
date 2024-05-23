@@ -53,7 +53,7 @@ background-color: rgb(47,51,60);
        <enum>Qt::LeftToRight</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="iconSize">
        <size>
@@ -2838,20 +2838,25 @@ border : None;
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
-        <string>Stepper Control</string>
+        <string>Run</string>
        </attribute>
       </widget>
       <widget class="QWidget" name="tab_3">
        <attribute name="title">
-        <string>Monitoring</string>
+        <string>Stepper Control</string>
        </attribute>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
-        <string>Settings</string>
+        <string>Monitoring</string>
        </attribute>
       </widget>
       <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>Settings</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="tab_6">
        <attribute name="title">
         <string>Help</string>
        </attribute>
