@@ -13,7 +13,8 @@ class TaskWidget(QWidget, Ui_Form):
     def __init__(self, task):
         super(TaskWidget, self).__init__()
         self.setupUi(self)
-
+        
+        self.settings = task # dict of all other variables used for init
         self.mode = task.mode
         self.min_stretch = task.min_stretch
         self.max_stretch = task.max_stretch
@@ -58,6 +59,6 @@ class TaskWidget(QWidget, Ui_Form):
 
     def is_selected(self, selected):
         if selected:
-            self.frame.setStyleSheet("background-color: rgb(47,51,60);")
+            self.frame.setStyleSheet("background-color: rgb(47,51,60); border: 2px solid black")
         else:
-            self.frame.setStyleSheet("background-color: rgb(30,34,43);")
+            self.frame.setStyleSheet("background-color: rgb(30,34,43); border: None")

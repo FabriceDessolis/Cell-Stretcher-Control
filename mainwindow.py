@@ -1,5 +1,6 @@
 import sys
 import os
+import sip
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import *
@@ -40,6 +41,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, obj=None, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        
+        self.tasks = [] # Not organized when drag and dropping widgets
 
         self.pad = NumberPad()
         self.pad.setWindowModality(Qt.ApplicationModal)
@@ -48,12 +51,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.listWidget = ListWidget()
         self.setup_list_widget()
         self.listWidget.itemPressed.connect(lambda item: self.item_selected(item))
+        
+        self.frame_taskprogress.hide()
 
         self.pushButton_3.clicked.connect(self.tests)
 
     def tests(self):
-        a = self.listWidget.count()
-        print(a)
+        print(self.tasks)
 
     def setup_list_widget(self):
         # this is a workaround for a pyqt bug deleting items when being dragged
@@ -96,16 +100,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def create_task(self, item: object, task: object):
-
         t = TaskWidget(task)
+        self.tasks.append(t)
         self.listWidget.addItem(item)
         self.listWidget.setItemWidget(item, t)
 
         item.setSizeHint(t.sizeHint())
         item.setTextAlignment(Qt.AlignCenter) # MARCHE PAS
+        
 
     @pyqtSlot()
     def remove_task(self, item: object):
+        # First find the widget in the tasks list and remove it
+        widget = self.listWidget.itemWidget(item)
+        self.tasks.remove(widget)
+        
+        # Then remove it from the listwidget
         row = self.listWidget.row(item)
         self.listWidget.takeItem(row)
         self.listWidget.removeItemWidget(item)
@@ -120,6 +130,31 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             not_selected = self.listWidget.item(i)
             if not_selected != item_selected:
                 self.listWidget.itemWidget(not_selected).is_selected(False)
+                
+    def create_taskrecap_view(self, items):
+        """
+        Add widgets to the RUN tab as visual information on the tasks order
+        """
+        # First remove everything in the taskrecap frame
+        while self.horizontalLayout_27.count(): # while count > 0
+            item_to_remove = self.horizontalLayout_27.itemAt(0)
+            widget_to_remove = item_to_remove.widget()
+            widget_to_remove.deleteLater()
+            sip.delete(widget_to_remove)
+            widget_to_remove = None
+            count -= 1
+
+        first_item = True
+        for i in items:
+            # pick the widget from the itemwidget
+            widget = self.listWidget.itemWidget(i)
+            # create a progressTaskWidget
+            w = ProgressTaskWidget(widget)
+            if first_item:
+                w.set_current_task(True)           # change label to "current task"
+                first_item = False
+            self.horizontalLayout_27.insertWidget(-1, w)
+        print("OUT")        
 
     def show_numberpad(self):
         self.pad.show()
@@ -142,3 +177,37 @@ class ListWidget(QListWidget):
             event.ignore()
         else:
             super().dragMoveEvent(event)
+            
+    
+class ProgressTaskWidget(QWidget):
+    """
+    Reusable custom widget that uses widget_task.TaskWidget and adds a label on top
+    Used to recap the selected tasks and to inform on the one runing 
+    """
+    
+    def __init__(self, widget, isFirst=False):
+        super(ProgressTaskWidget, self).__init__()
+
+        # Create a task widget with the same imported settings
+        self.task = TaskWidget(widget.settings)
+
+        self.verticalLayout = QVBoxLayout()
+        self.verticalSpacer = QSpacerItem(20, 56, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.label = QLabel("")
+        self.label.setAlignment(Qt.AlignCenter)
+        
+        self.verticalLayout.addItem(self.verticalSpacer)
+        self.verticalLayout.addWidget(self.label)
+        self.verticalLayout.addWidget(self.task)
+        self.verticalLayout.addItem(self.verticalSpacer)
+
+        self.setLayout(self.verticalLayout)
+        
+        if isFirst:
+            self.set_current_task(True)
+            
+    def set_current_task(self, iscurrent):
+        if iscurrent:
+            self.label.setText("Current task")
+        else:
+            self.label.setText("")

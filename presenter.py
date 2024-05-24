@@ -74,6 +74,7 @@ class Presenter:
             self.model.remove_task(items[0])
 
     def check_items_condition(self, item: object) -> int:
+        # check if there are any task created
         if self.model.tasks == []:
             Dialog("No task was created")
             return 0
@@ -94,6 +95,7 @@ class Presenter:
             item = self.view.listWidget.item(i)
             items_order.append(item)
         self.model.start(items_order)
+        self.view.create_taskrecap_view(items_order)
 
     @pyqtSlot(str)
     def transmit_error_message(self, message):
