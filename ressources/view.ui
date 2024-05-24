@@ -3048,7 +3048,7 @@ border : None;
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QProgressBar" name="progressBar">
+                <widget class="QProgressBar" name="progressBar_total">
                  <property name="minimumSize">
                   <size>
                    <width>500</width>
@@ -3221,7 +3221,7 @@ border : None;
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QProgressBar" name="progressBar_5">
+                <widget class="QProgressBar" name="progressBar_task">
                  <property name="minimumSize">
                   <size>
                    <width>500</width>

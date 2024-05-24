@@ -136,14 +136,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         Add widgets to the RUN tab as visual information on the tasks order
         """
         # First remove everything in the taskrecap frame
-        while self.horizontalLayout_27.count(): # while count > 0
+        count = self.horizontalLayout_27.count()
+        while count > 0: # while count > 0
             item_to_remove = self.horizontalLayout_27.itemAt(0)
             widget_to_remove = item_to_remove.widget()
+            self.horizontalLayout_27.removeWidget(widget_to_remove)
             widget_to_remove.deleteLater()
-            sip.delete(widget_to_remove)
-            widget_to_remove = None
             count -= 1
 
+        # Then add the progress task widgets
         first_item = True
         for i in items:
             # pick the widget from the itemwidget
@@ -154,7 +155,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 w.set_current_task(True)           # change label to "current task"
                 first_item = False
             self.horizontalLayout_27.insertWidget(-1, w)
-        print("OUT")        
+
+        # Finally show one or two progress bars
+        if len(items) == 1:
+            self.frame_taskprogress.hide()
+        else:
+            self.frame_taskprogress.show()
+
+    def update_progress_bar(self, value):
+        self.progressBar_task.setValue(int(value))
+        self.progressBar_total.setValue(int(value))
 
     def show_numberpad(self):
         self.pad.show()
@@ -193,13 +203,14 @@ class ProgressTaskWidget(QWidget):
 
         self.verticalLayout = QVBoxLayout()
         self.verticalSpacer = QSpacerItem(20, 56, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer2 = QSpacerItem(20, 56, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.label = QLabel("")
         self.label.setAlignment(Qt.AlignCenter)
         
         self.verticalLayout.addItem(self.verticalSpacer)
         self.verticalLayout.addWidget(self.label)
         self.verticalLayout.addWidget(self.task)
-        self.verticalLayout.addItem(self.verticalSpacer)
+        self.verticalLayout.addItem(self.verticalSpacer2)
 
         self.setLayout(self.verticalLayout)
         
