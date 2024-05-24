@@ -10,7 +10,8 @@ class Presenter:
         self.model = model
         self.model.giveTaskToView.connect(lambda item, task: self.view.create_task(item, task))
         self.model.removeTaskFromView.connect(lambda item: self.view.remove_task(item))
-        self.model.progressBarUpdate.connect(lambda percentage: self.view.update_progress_bar(percentage))
+        self.model.progressBarUpdate.connect(lambda task, total: self.view.update_progress_bar(task, total))
+        self.model.startNextTask.connect(lambda index: self.view.start_next_task(index))
 
         for i in self.model.settings_buttons.values():
             for j in i:

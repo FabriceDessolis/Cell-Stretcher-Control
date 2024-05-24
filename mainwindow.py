@@ -162,9 +162,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.frame_taskprogress.show()
 
-    def update_progress_bar(self, value):
-        self.progressBar_task.setValue(int(value))
-        self.progressBar_total.setValue(int(value))
+    def start_next_task(self, index):
+        count = self.horizontalLayout_27.count()
+        while count > 0:
+            w = self.horizontalLayout_27.itemAt(count - 1).widget()
+            if index == (count - 1):
+                w.set_current_task(True)
+            else:
+                w.set_current_task(False)
+            count -= 1
+
+    def update_progress_bar(self, taskvalue, totalvalue):
+        self.progressBar_task.setValue(int(taskvalue))
+        self.progressBar_total.setValue(int(totalvalue))
 
     def show_numberpad(self):
         self.pad.show()

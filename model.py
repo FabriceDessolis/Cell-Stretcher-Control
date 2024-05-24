@@ -9,7 +9,8 @@ class Model(QObject):
         and it creates and manages tasks objects """
     giveTaskToView = pyqtSignal(object, object)
     removeTaskFromView = pyqtSignal(object)
-    progressBarUpdate = pyqtSignal(float)
+    progressBarUpdate = pyqtSignal(float, float)
+    startNextTask = pyqtSignal(int)
 
     def __init__(self):
         super(Model, self).__init__()
@@ -101,7 +102,11 @@ class Model(QObject):
         self.tasks = provisional_tasklist
 
         # pop up a window with a review of all the tasks to be done and the total time it will take
-        days, hours, minutes = self.calculate_total_duration()
+        # but first, create a task list without the items in self.tasks
+        tasks = []
+        for i in self.tasks:
+            tasks.append(i[1])
+        days, hours, minutes = calculate_duration(tasks)
         acceptwindow = Dialog("Confirm start operation ?\nTotal time : %s days %s hours %s minutes" % (days, hours, minutes), True).result
         print("ACCEPT WINDOW :", acceptwindow)
         # send to a task manager that will count time and send tasks to arduino when they are ready
@@ -110,23 +115,10 @@ class Model(QObject):
             for i in self.tasks:
                 task_list.append(i[1])
             self.task_manager = TaskManager(task_list)
-            self.task_manager.progressBarUpdate.connect(lambda value: self.progressBarUpdate.emit(value))
+            self.task_manager.progressBarUpdate.connect(lambda task, total: self.progressBarUpdate.emit(task, total))
+            self.task_manager.startNextTask.connect(lambda index: self.startNextTask.emit(index))
         else:
             return
-
-    def calculate_total_duration(self):
-        durations = [0, 0, 0]  # days, hours, minutes
-        for i in self.tasks:
-            obj = i[1]
-            durations[0] = durations[0] + int(obj.duration[0:2])  # days
-            durations[1] = durations[1] + int(obj.duration[2:4])  # hours
-            durations[2] = durations[2] + int(obj.duration[4:6])  # minutes
-
-        minutes, hours = durations[2] % 60, durations[2] // 60
-        hours, days = durations[1] % 24 + hours, durations[1] // 24
-        days = durations[0] + days
-
-        return days, hours, minutes
 
     def send_to_arduino(self):
         ...
@@ -149,36 +141,55 @@ class Task:
 
 class TaskManager(QObject):
     qtimer_timeout = 1000 # 1s
-    progressBarUpdate = pyqtSignal(float)
+    progressBarUpdate = pyqtSignal(float, float)
+    startNextTask = pyqtSignal(int)
 
     def __init__(self, task_list):
         super(TaskManager, self).__init__()
         self.tasks = task_list # collection of Task objects
         self.running_task = 0 # for index
-        self.task_end_time = 0
-        self.task_duration = 0
+
+        self.task_end_time = 0 # epoch in seconds
+        self.task_duration = 0 # seconds
         self.task_percent_done = 0
+
+        self.total_end_time = 0 # seconds
+        self.total_duration = 0 # seconds
+        self.total_percent_done = 0
+
+        self.get_total_duration()
         self.run_task()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_remaining_time)
         self.timer.start(self.qtimer_timeout)
 
+    def get_total_duration(self):
+        self.total_duration = calculate_duration(self.tasks, return_seconds=True)
+
     def run_task(self):
+        self.task_percent_done = 0
         # Get the epoch where we started
         start_time = QDateTime.currentSecsSinceEpoch()
-        self.task_duration = self.get_task_duration()
+        self.task_duration = calculate_duration(self.tasks[self.running_task], return_seconds=True)
         self.task_end_time = start_time + self.task_duration
+        if self.running_task == 0: # if first task
+            self.total_end_time = start_time + self.total_duration
 
     def check_remaining_time(self):
-        remaining_time = self.task_end_time - QDateTime.currentSecsSinceEpoch()
+        task_remaining_time = self.task_end_time - QDateTime.currentSecsSinceEpoch()
+        total_remaining_time = self.total_end_time - QDateTime.currentSecsSinceEpoch()
         # update QProgressBar
-        new_task_percent_done = 100 - ((remaining_time / self.task_duration) * 100)
+        new_task_percent_done = 100 - ((task_remaining_time / self.task_duration) * 100)
+        new_total_percent_done = 100 - ((total_remaining_time / self.total_duration) * 100)
+        # here we only emit when task percent changed because it's always faster than total percent
         if new_task_percent_done - self.task_percent_done >= 1:
             self.task_percent_done = new_task_percent_done
-            self.progressBarUpdate.emit(self.task_percent_done) # goes to Model
+            self.total_percent_done = new_total_percent_done
+            self.progressBarUpdate.emit(self.task_percent_done, self.total_percent_done) # goes to Model
+
         # check if task has ended
-        if remaining_time < (self.qtimer_timeout / 1000) or remaining_time < 0:   # DONT FORGET TO CHANGE
+        if task_remaining_time < (self.qtimer_timeout / 1000) or task_remaining_time < 0:   # DONT FORGET TO CHANGE
             self.task_ended()
 
     def task_ended(self):
@@ -187,6 +198,7 @@ class TaskManager(QObject):
         if len(self.tasks) > (self.running_task + 1):
             print("GO TO NEXT TASK")
             self.running_task += 1
+            self.startNextTask.emit(self.running_task)
             self.run_task()
         else:
             # some signals to inform user
@@ -194,24 +206,26 @@ class TaskManager(QObject):
             self.timer.stop()
             return
 
-    def get_task_duration(self):
-        days, hours, minutes = self.calculate_task_duration(self.tasks[self.running_task])
-        s_time = days*8.64e4 + hours*3.6e3 + minutes*60
-        return s_time
-
-    def calculate_task_duration(self, task):
-        durations = [0, 0, 0]  # days, hours, minutes
-        durations[0] = durations[0] + int(task.duration[0:2])  # days
-        durations[1] = durations[1] + int(task.duration[2:4])  # hours
-        durations[2] = durations[2] + int(task.duration[4:6])  # minutes
-
-        minutes, hours = durations[2] % 60, durations[2] // 60
-        hours, days = durations[1] % 24 + hours, durations[1] // 24
-        days = durations[0] + days
-
-        return days, hours, minutes
-
 
 """ FUNCTIONS """
 
+def calculate_duration(tasklist, return_seconds=False):
+    durations = [0, 0, 0]  # days, hours, minutes
+    if type(tasklist) is not list:
+        tasks = [tasklist]
+    else:
+        tasks = tasklist
+    for t in tasks:
+        durations[0] = durations[0] + int(t.duration[0:2])  # days
+        durations[1] = durations[1] + int(t.duration[2:4])  # hours
+        durations[2] = durations[2] + int(t.duration[4:6])  # minutes
 
+    minutes, hours = durations[2] % 60, durations[2] // 60
+    hours, days = durations[1] % 24 + hours, durations[1] // 24
+    days = durations[0] + days
+
+    if return_seconds:
+        s_time = days * 8.64e4 + hours * 3.6e3 + minutes * 60
+        return s_time
+
+    return days, hours, minutes
