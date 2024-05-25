@@ -133,6 +133,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 
     def create_taskrecap_view(self, items):
         """
+        Start button was pressed and accepted
         Add widgets to the RUN tab as visual information on the tasks order
         """
         # First remove everything in the taskrecap frame
@@ -156,11 +157,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 first_item = False
             self.horizontalLayout_27.insertWidget(-1, w)
 
-        # Finally show one or two progress bars
+        # Show one or two progress bars
         if len(items) == 1:
             self.frame_taskprogress.hide()
         else:
             self.frame_taskprogress.show()
+
+        # Finally, swap to tab RUN
+        self.tabWidget.setCurrentIndex(1)
 
     def start_next_task(self, index):
         count = self.horizontalLayout_27.count()
@@ -175,6 +179,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_progress_bar(self, taskvalue, totalvalue):
         self.progressBar_task.setValue(int(taskvalue))
         self.progressBar_total.setValue(int(totalvalue))
+
+    def update_times(self, times):
+        # comes as (("","",""), ("","",""), ("","",""), ("","",""))
+        i = 1
+        for val in times:
+            text = val[0] + "D " + val[1] + "H " + val[2] + "MN"
+            if getattr(self, f"label_t{i}").text() != text:
+                getattr(self, f"label_t{i}").setText(text)
+            i += 1
 
     def show_numberpad(self):
         self.pad.show()

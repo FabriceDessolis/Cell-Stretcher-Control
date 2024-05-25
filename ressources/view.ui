@@ -135,7 +135,7 @@ background-color: rgb(47,51,60);
      <enum>Qt::LeftToRight</enum>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <property name="iconSize">
      <size>
@@ -2936,7 +2936,23 @@ border : None;
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_27"/>
+        <layout class="QHBoxLayout" name="horizontalLayout_27">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+        </layout>
        </widget>
       </item>
       <item row="0" column="0">
@@ -3092,7 +3108,7 @@ border : None;
               </property>
               <layout class="QGridLayout" name="gridLayout_22">
                <item row="0" column="0">
-                <widget class="QLabel" name="label_13">
+                <widget class="QLabel" name="label_t3">
                  <property name="text">
                   <string>time</string>
                  </property>
@@ -3121,7 +3137,7 @@ border : None;
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QLabel" name="label_15">
+                <widget class="QLabel" name="label_t4">
                  <property name="text">
                   <string>time</string>
                  </property>
@@ -3265,7 +3281,7 @@ border : None;
               </property>
               <layout class="QGridLayout" name="gridLayout_27">
                <item row="0" column="0">
-                <widget class="QLabel" name="label_54">
+                <widget class="QLabel" name="label_t1">
                  <property name="text">
                   <string>time</string>
                  </property>
@@ -3294,7 +3310,7 @@ border : None;
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QLabel" name="label_56">
+                <widget class="QLabel" name="label_t2">
                  <property name="text">
                   <string>time</string>
                  </property>

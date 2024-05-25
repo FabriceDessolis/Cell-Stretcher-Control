@@ -10,12 +10,16 @@ class Model(QObject):
     giveTaskToView = pyqtSignal(object, object)
     removeTaskFromView = pyqtSignal(object)
     progressBarUpdate = pyqtSignal(float, float)
+    timesUpdate = pyqtSignal(tuple)
     startNextTask = pyqtSignal(int)
 
     def __init__(self):
         super(Model, self).__init__()
         self.tasks = [] # [[item, task object], [...]]
-        self.task_manager = None # will be used to hold the TaskManager object
+        self.task_manager = TaskManager() # will be used to hold the TaskManager object
+        self.task_manager.progressBarUpdate.connect(lambda task, total: self.progressBarUpdate.emit(task, total))
+        self.task_manager.startNextTask.connect(lambda index: self.startNextTask.emit(index))
+        self.task_manager.timesUpdate.connect(lambda times: self.timesUpdate.emit(times))
 
         self.current_mode = 1
         self.current_button = 1
@@ -114,9 +118,8 @@ class Model(QObject):
             task_list = []
             for i in self.tasks:
                 task_list.append(i[1])
-            self.task_manager = TaskManager(task_list)
-            self.task_manager.progressBarUpdate.connect(lambda task, total: self.progressBarUpdate.emit(task, total))
-            self.task_manager.startNextTask.connect(lambda index: self.startNextTask.emit(index))
+            self.task_manager.init(task_list)
+
         else:
             return
 
@@ -142,54 +145,93 @@ class Task:
 class TaskManager(QObject):
     qtimer_timeout = 1000 # 1s
     progressBarUpdate = pyqtSignal(float, float)
+    timesUpdate = pyqtSignal(tuple)
     startNextTask = pyqtSignal(int)
 
-    def __init__(self, task_list):
-        super(TaskManager, self).__init__()
+    def init(self, task_list):
         self.tasks = task_list # collection of Task objects
         self.running_task = 0 # for index
 
-        self.task_end_time = 0 # epoch in seconds
-        self.task_duration = 0 # seconds
-        self.task_percent_done = 0
+        self.times_track = {"task": {"start_time": 0,            # epoch in seconds
+                                     "end_time": 0,              # epoch in seconds
+                                     "duration": 0,              # seconds
+                                     "percent_done": 0,          # %
+                                     "time_elapsed": 0,
+                                     "time_left": 0},
+                            "total": {"start_time": 0,
+                                      "end_time": 0,
+                                      "duration": 0,
+                                      "percent_done": 0,
+                                      "time_elapsed": 0,
+                                      "time_left": 0}}
 
-        self.total_end_time = 0 # seconds
-        self.total_duration = 0 # seconds
-        self.total_percent_done = 0
-
-        self.get_total_duration()
+        self.times_track["total"]["duration"] = calculate_duration(self.tasks, return_seconds=True)
         self.run_task()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_remaining_time)
         self.timer.start(self.qtimer_timeout)
 
-    def get_total_duration(self):
-        self.total_duration = calculate_duration(self.tasks, return_seconds=True)
-
     def run_task(self):
-        self.task_percent_done = 0
-        # Get the epoch where we started
-        start_time = QDateTime.currentSecsSinceEpoch()
-        self.task_duration = calculate_duration(self.tasks[self.running_task], return_seconds=True)
-        self.task_end_time = start_time + self.task_duration
-        if self.running_task == 0: # if first task
-            self.total_end_time = start_time + self.total_duration
+        # new task percent done is 0
+        self.times_track["task"]["percent_done"] = 0
+        self.times_track["task"]["time_elapsed"] = 0
+        # Get the epoch where we started and get task duration and end time
+        self.times_track["task"]["start_time"] = QDateTime.currentSecsSinceEpoch()
+        self.times_track["task"]["duration"] = calculate_duration(self.tasks[self.running_task], return_seconds=True)
+        self.times_track["task"]["end_time"] = self.times_track["task"]["start_time"] + self.times_track["task"]["duration"]
+        # if it's the first task, find the total end time
+        if self.running_task == 0:
+            self.times_track["total"]["start_time"] = self.times_track["task"]["start_time"]
+            self.times_track["total"]["end_time"] = self.times_track["total"]["start_time"] + self.times_track["total"]["duration"]
+
+    def pause_process(self):
+        ...
+
+    def resume_process(self):
+        ...
+
+    def abort_process(self):
+        ...
 
     def check_remaining_time(self):
-        task_remaining_time = self.task_end_time - QDateTime.currentSecsSinceEpoch()
-        total_remaining_time = self.total_end_time - QDateTime.currentSecsSinceEpoch()
-        # update QProgressBar
-        new_task_percent_done = 100 - ((task_remaining_time / self.task_duration) * 100)
-        new_total_percent_done = 100 - ((total_remaining_time / self.total_duration) * 100)
-        # here we only emit when task percent changed because it's always faster than total percent
-        if new_task_percent_done - self.task_percent_done >= 1:
-            self.task_percent_done = new_task_percent_done
-            self.total_percent_done = new_total_percent_done
-            self.progressBarUpdate.emit(self.task_percent_done, self.total_percent_done) # goes to Model
+        """
+        Called each QTimer timeout interval to check if task is done and update progress bars
+        """
+        self.times_track["task"]["time_left"] = self.times_track["task"]["end_time"] - QDateTime.currentSecsSinceEpoch()
+        self.times_track["total"]["time_left"] = self.times_track["total"]["end_time"] - QDateTime.currentSecsSinceEpoch()
+        self.update_view()
+        self.has_task_ended()
 
+    def update_view(self):
+        # update QProgressBar
+        new_task_percent_done = get_percentage(self.times_track["task"]["time_left"], self.times_track["task"]["duration"])
+        new_total_percent_done = get_percentage(self.times_track["total"]["time_left"], self.times_track["total"]["duration"])
+        # here we only emit when task percent changed because it's always faster than total percent
+        if new_task_percent_done - self.times_track["task"]["percent_done"] >= 1:
+            self.times_track["task"]["percent_done"] = new_task_percent_done
+            self.times_track["total"]["percent_done"] = new_total_percent_done
+            self.progressBarUpdate.emit(self.times_track["task"]["percent_done"], self.times_track["total"]["percent_done"]) # goes to Model
+
+        # update time elapsed and time left
+        new_task_time_elapsed = self.times_track["task"]["duration"] - self.times_track["task"]["time_left"]
+        new_total_time_elapsed = self.times_track["total"]["duration"] - self.times_track["total"]["time_left"]
+        if new_task_time_elapsed - self.times_track["task"]["time_elapsed"] >= 59 or self.times_track["task"]["time_elapsed"] == 0:
+            print("EMIT")
+            self.times_track["task"]["time_elapsed"] = new_task_time_elapsed
+            self.times_track["total"]["time_elapsed"] = new_total_time_elapsed
+            task_time_elapsed_string = return_string_duration(self.times_track["task"]["time_elapsed"])
+            task_time_remaining_string = return_string_duration(self.times_track["task"]["time_left"])
+            total_time_elapsed_string = return_string_duration(self.times_track["total"]["time_elapsed"])
+            if self.times_track["total"]["time_left"] > 0: # prevents negative value
+                total_time_remaining_string = return_string_duration(self.times_track["total"]["time_left"])
+            else:
+                total_time_remaining_string = ("00", "00", "00")
+            self.timesUpdate.emit((task_time_elapsed_string, task_time_remaining_string, total_time_elapsed_string, total_time_remaining_string))
+
+    def has_task_ended(self):
         # check if task has ended
-        if task_remaining_time < (self.qtimer_timeout / 1000) or task_remaining_time < 0:   # DONT FORGET TO CHANGE
+        if self.times_track["task"]["time_left"] < (self.qtimer_timeout / 1000) or self.times_track["task"]["time_left"] < 0:   # DONT FORGET TO CHANGE
             self.task_ended()
 
     def task_ended(self):
@@ -198,7 +240,7 @@ class TaskManager(QObject):
         if len(self.tasks) > (self.running_task + 1):
             print("GO TO NEXT TASK")
             self.running_task += 1
-            self.startNextTask.emit(self.running_task)
+            self.startNextTask.emit(self.running_task)      # update label in the task recap view
             self.run_task()
         else:
             # some signals to inform user
@@ -210,6 +252,10 @@ class TaskManager(QObject):
 """ FUNCTIONS """
 
 def calculate_duration(tasklist, return_seconds=False):
+    """
+    task list comes as a list of task objects, we take the instance variable "duration",
+    it's a string looking like "120530" -> "DDHHMN"
+    """
     durations = [0, 0, 0]  # days, hours, minutes
     if type(tasklist) is not list:
         tasks = [tasklist]
@@ -229,3 +275,20 @@ def calculate_duration(tasklist, return_seconds=False):
         return s_time
 
     return days, hours, minutes
+
+def return_string_duration(seconds):
+    """
+    kind of the opposite of calculate duration, here we input seconds and output a string "DDHHMN"
+    """
+    minutes = int(seconds // 60) % 60
+    hours = int(seconds // 3600) % 24
+    days = int(seconds // 86400)
+    l = [days, hours, minutes]
+    for i in range(len(l)):
+        l[i] = str(l[i])
+        if len(l[i]) == 1:
+            l[i] = "0" + l[i]
+    return l[0], l[1], l[2]
+def get_percentage(remaining_time, duration):
+    p = 100 - ((remaining_time / duration) * 100)
+    return p

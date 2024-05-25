@@ -1,6 +1,5 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-import qdarktheme
 from model import Model
 from presenter import Presenter
 
