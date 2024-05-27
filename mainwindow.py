@@ -97,6 +97,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             getattr(self, f"pushButton_{current_button}").setText(value[0]+value[1]+"D "
                                                                  +value[2]+value[3]+"H "
                                                                  +value[4]+value[5]+"MN")
+        if self.pad._type == "stepper":
+            getattr(self, f"pushButton_{current_button}").setText(str(value))
 
     @pyqtSlot()
     def create_task(self, item: object, task: object):
@@ -137,14 +139,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         Add widgets to the RUN tab as visual information on the tasks order
         """
         # First remove everything in the taskrecap frame
-        count = self.horizontalLayout_27.count()
-        while count > 0: # while count > 0
-            item_to_remove = self.horizontalLayout_27.itemAt(0)
-            widget_to_remove = item_to_remove.widget()
-            self.horizontalLayout_27.removeWidget(widget_to_remove)
-            widget_to_remove.deleteLater()
-            count -= 1
-
+        self.clean_taskrecap_view()
         # Then add the progress task widgets
         first_item = True
         for i in items:
@@ -165,6 +160,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Finally, swap to tab RUN
         self.tabWidget.setCurrentIndex(1)
+
+    def clean_taskrecap_view(self):
+        count = self.horizontalLayout_27.count()
+        while count > 0: # while count > 0
+            item_to_remove = self.horizontalLayout_27.itemAt(0)
+            widget_to_remove = item_to_remove.widget()
+            self.horizontalLayout_27.removeWidget(widget_to_remove)
+            widget_to_remove.deleteLater()
+            count -= 1
+
+    def start_pause_abort(self, run_state):
+        if run_state["running"] is True:
+            if run_state["paused"] is True:
+                text = "RESUME"
+            else:
+                text = "PAUSE"
+        else:
+            text = "START"
+        self.pushButton_start.setText(text)
 
     def start_next_task(self, index):
         count = self.horizontalLayout_27.count()
@@ -188,6 +202,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if getattr(self, f"label_t{i}").text() != text:
                 getattr(self, f"label_t{i}").setText(text)
             i += 1
+
+    def clean_after_abort(self):
+        self.update_progress_bar(0, 0)
+        self.update_times((("00", "00", "00"), ("00", "00", "00"), ("00", "00", "00"), ("00", "00", "00")))
+        self.frame_taskprogress.hide()
+        self.clean_taskrecap_view()
 
     def show_numberpad(self):
         self.pad.show()

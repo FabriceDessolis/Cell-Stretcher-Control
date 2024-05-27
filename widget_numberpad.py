@@ -40,7 +40,7 @@ class NumberPad(QWidget, Ui_Form):
         self.lineEdit.setText(self.value)
         
     def enter(self):
-        if self._type == "not_duration":
+        if self._type == "not_duration" or self._type == "stepper":
             try:
                 num_value = float(self.value)
             except Exception as e:

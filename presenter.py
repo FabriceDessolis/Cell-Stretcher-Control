@@ -13,6 +13,7 @@ class Presenter:
         self.model.progressBarUpdate.connect(lambda task, total: self.view.update_progress_bar(task, total))
         self.model.timesUpdate.connect(lambda times: self.view.update_times(times))
         self.model.startNextTask.connect(lambda index: self.view.start_next_task(index))
+        self.model.runStarted.connect(lambda run_state: self.view.start_pause_abort(run_state))
 
         for i in self.model.settings_buttons.values():
             for j in i:
@@ -32,14 +33,16 @@ class Presenter:
         self.view.pushButton_1.clicked.connect(self.duplicate_task)
         self.view.pushButton_2.clicked.connect(self.remove_task)
         self.view.pushButton_4.clicked.connect(self.test)
-        self.view.pushButton_start.clicked.connect(self.start)
+        self.view.pushButton_start.clicked.connect(self.start_pause)
+        self.view.pushButton_abort.clicked.connect(self.abort)
+        self.view.pushButton_stepper_go.clicked.connect(self.model.stepper_go)
 
     def test(self):
         print(self.model.tasks)
 
     def ask_for_value(self, n: int, _type: str):
         """
-        This is called whenever a button is pressed. It shows the numberpad widget 
+        This is called whenever a button is pressed. It shows the numberpad widget
         """
         self.view.pad._type = _type
         self.model.current_button = n
@@ -63,6 +66,10 @@ class Presenter:
             self.model.settings_values[self.model.current_button] = value
             # and display it
             self.view.display_value(value, self.model.current_button)
+            # if we change the stepper distances togo, affect the other button accordingly:
+            if self.model.current_button // 10 == 6:
+                affected_button, affected_val = self.model.stepper_togo_changed()
+                self.view.display_value(affected_val, affected_button)
 
     def duplicate_task(self):
         items = self.view.listWidget.selectedItems()
@@ -89,17 +96,41 @@ class Presenter:
         else:
             return 1
 
-    def start(self):
-        ok = self.check_items_condition("")
-        if not ok:
-            return
-        items_order = []
-        for i in range(self.view.listWidget.count()):
-            item = self.view.listWidget.item(i)
-            items_order.append(item)
-        self.model.start(items_order)
-        self.view.create_taskrecap_view(items_order)
+    def start_pause(self):
+        if self.model.run_state["running"] is False:
+            ok = self.check_items_condition("")
+            if not ok:
+                return
+            items_order = []
+            for i in range(self.view.listWidget.count()):
+                item = self.view.listWidget.item(i)
+                items_order.append(item)
+            accepted = self.model.start(items_order)
+            if accepted:
+                self.view.create_taskrecap_view(items_order)
+            else:
+                return
 
-    @pyqtSlot(str)
-    def transmit_error_message(self, message):
-        self.view.display_dialog_popup(message)
+        elif self.model.run_state["paused"] is False:
+            self.model.run_state["paused"] = True
+            self.model.task_manager.pause_process()
+            self.view.start_pause_abort(self.model.run_state)
+
+        elif self.model.run_state["paused"] is True:
+            self.model.run_state["paused"] = False
+            self.model.task_manager.resume_process()
+            self.view.start_pause_abort(self.model.run_state)
+
+    def abort(self):
+        if self.model.run_state["running"] is False:
+            return # nothing to abort
+        else:
+            accepted = Dialog("Are you sure you want to abort the process ?", True).result
+            if accepted:
+                self.model.run_state["running"] = False
+                self.model.run_state["paused"] = False
+                # Reset everything to zero
+                self.view.clean_after_abort()
+                self.model.task_manager.abort_process()
+                self.view.start_pause_abort(self.model.run_state)
+
