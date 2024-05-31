@@ -1,3 +1,4 @@
+import arduino
 from methods import *
 from PyQt5.QtCore import *
 
@@ -10,6 +11,7 @@ class TaskManager(QObject):
     def init(self, task_list):
         self.tasks = task_list # collection of Task objects
         self.running_task = 0 # for index
+        self.arduino = arduino.Arduino()
 
         self.times_track = {"task": {"start_time": 0,            # epoch in seconds
                                      "end_time": 0,              # epoch in seconds
@@ -26,14 +28,14 @@ class TaskManager(QObject):
                             "pause": 0}                          # epoch in seconds
 
         self.times_track["total"]["duration"] = calculate_duration(self.tasks, return_seconds=True)
-        self.run_task()
+        self.run_new_task()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.check_remaining_time)
         self.timer.setInterval(self.qtimer_timeout)
         self.timer.start()
 
-    def run_task(self):
+    def run_new_task(self):
         # new task percent done is 0
         self.times_track["task"]["percent_done"] = 0
         self.times_track["task"]["time_elapsed"] = 0
@@ -46,11 +48,15 @@ class TaskManager(QObject):
             self.times_track["total"]["start_time"] = self.times_track["task"]["start_time"]
             self.times_track["total"]["end_time"] = self.times_track["total"]["start_time"] + self.times_track["total"]["duration"]
 
+        #self.arduino.start_task(self.tasks[self.running_task])
+
     def pause_process(self):
         # Store the epoch when the program was paused
         self.times_track["pause"] = QDateTime.currentSecsSinceEpoch()
         # Stop the QTimer
         self.timer.stop()
+
+        self.arduino.pause()
 
     def resume_process(self):
         # Get the duration the process was paused and add it to the previously stored times
@@ -108,9 +114,8 @@ class TaskManager(QObject):
             print("GO TO NEXT TASK")
             self.running_task += 1
             self.startNextTask.emit(self.running_task)      # update label in the task recap view
-            self.run_task()
+            self.run_new_task()
         else:
             # some signals to inform user
             print("ALL TASKS ENDED")
             self.timer.stop()
-            return

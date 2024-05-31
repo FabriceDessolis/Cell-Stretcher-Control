@@ -8,8 +8,8 @@ def main():
     
     from mainwindow import MainWindow
     view = MainWindow()
-    manager = Model()
-    Presenter(view, manager)
+    model = Model()
+    Presenter(view, model)
 
     view.show()
     sys.exit(app.exec())
