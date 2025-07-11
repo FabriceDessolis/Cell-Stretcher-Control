@@ -1,6 +1,6 @@
 import sys
 import os
-import sip
+#import sip
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import *
@@ -41,7 +41,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, obj=None, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        
         self.tasks = [] # Not organized when drag and dropping widgets
 
         self.pad = NumberPad()

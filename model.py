@@ -78,6 +78,25 @@ class Model(QObject):
                     elif setting == 5:
                         settings["duration"] = value
 
+        # check for inconsistencies
+        if settings["min_stretch"] == settings["max_stretch"]:
+            Dialog("min stretch equals max stretch, so no stretch")
+            return
+        if settings["min_stretch"] > settings["max_stretch"]:
+            Dialog("Please set max stretch higher than min stretch")
+            return
+        if settings["freq"] == 0:
+            Dialog("We need some frequency")
+            return
+        if settings["freq"] > 2:
+            Dialog("Frequency too high, please don't try to break the stretcher")
+            return
+
+        # change nonetype values to 0
+        for key, value in settings.items():
+            if value is None:
+                settings[key] = 0
+
         # then ask task manager to create an object with those values
         self.create_task_object(settings)
 

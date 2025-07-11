@@ -5,7 +5,7 @@ from presenter import Presenter
 
 def main():
     app = QApplication(sys.argv)
-    
+
     from mainwindow import MainWindow
     view = MainWindow()
     model = Model()

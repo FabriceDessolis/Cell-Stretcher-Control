@@ -48,10 +48,13 @@ class NumberPad(QWidget, Ui_Form):
                 return
         if self._type == "duration":
             if self.value.isnumeric() is False:
-                Dialog("Please enter a date with DDHHMN format")
+                Dialog("Please enter a time with DDHHMN format")
                 return
             if len(self.value) != 6:
-                Dialog("Please enter a date with DDHHMN format")
+                Dialog("Please enter a time with DDHHMN format")
+                return
+            if self.value == "000000":
+                Dialog("What's the point of running a task for 0s ?")
                 return
             num_value = self.value
                     

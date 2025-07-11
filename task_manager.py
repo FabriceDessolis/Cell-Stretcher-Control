@@ -1,4 +1,4 @@
-import arduino
+from arduino import Arduino
 from methods import *
 from PyQt5.QtCore import *
 
@@ -11,7 +11,7 @@ class TaskManager(QObject):
     def init(self, task_list):
         self.tasks = task_list # collection of Task objects
         self.running_task = 0 # for index
-        self.arduino = arduino.Arduino()
+        self.arduino = Arduino()
 
         self.times_track = {"task": {"start_time": 0,            # epoch in seconds
                                      "end_time": 0,              # epoch in seconds
@@ -48,14 +48,13 @@ class TaskManager(QObject):
             self.times_track["total"]["start_time"] = self.times_track["task"]["start_time"]
             self.times_track["total"]["end_time"] = self.times_track["total"]["start_time"] + self.times_track["total"]["duration"]
 
-        #self.arduino.start_task(self.tasks[self.running_task])
+        self.arduino.start_task(self.tasks[self.running_task])
 
     def pause_process(self):
         # Store the epoch when the program was paused
         self.times_track["pause"] = QDateTime.currentSecsSinceEpoch()
         # Stop the QTimer
         self.timer.stop()
-
         self.arduino.pause()
 
     def resume_process(self):
@@ -67,9 +66,11 @@ class TaskManager(QObject):
                 item["end_time"] += pause_duration
         # Restart the QTimer
         self.timer.start()
+        self.arduino.resume()
 
     def abort_process(self):
         self.timer.stop()
+        self.arduino.abort()
 
     def check_remaining_time(self):
         """
