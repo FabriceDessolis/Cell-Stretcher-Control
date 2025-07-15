@@ -14,6 +14,7 @@ class Presenter:
         self.model.timesUpdate.connect(lambda times: self.view.update_times(times))
         self.model.startNextTask.connect(lambda index: self.view.start_next_task(index))
         self.model.runStarted.connect(lambda run_state: self.view.start_pause_abort(run_state))
+        self.model.allTaskEnded.connect(self.end)
 
         for i in self.model.settings_buttons.values():
             for j in i:
@@ -120,6 +121,12 @@ class Presenter:
             self.model.run_state["paused"] = False
             self.model.task_manager.resume_process()
             self.view.start_pause_abort(self.model.run_state)
+            
+    def end(self):
+        self.model.run_state["paused"] = False
+        self.model.task_manager.resume_process()
+        self.view.start_pause_abort(self.model.run_state)
+       
 
     def abort(self):
         if self.model.run_state["running"] is False:

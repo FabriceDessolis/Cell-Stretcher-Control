@@ -7,11 +7,15 @@ class TaskManager(QObject):
     progressBarUpdate = pyqtSignal(float, float)
     timesUpdate = pyqtSignal(tuple)
     startNextTask = pyqtSignal(int)
+    allTaskEnded = pyqtSignal()
+    
+    def connect_to_arduino(self):
+        self.arduino = Arduino()
 
     def init(self, task_list):
+        print("TASK MANAGER")
         self.tasks = task_list # collection of Task objects
         self.running_task = 0 # for index
-        self.arduino = Arduino()
 
         self.times_track = {"task": {"start_time": 0,            # epoch in seconds
                                      "end_time": 0,              # epoch in seconds
@@ -119,4 +123,6 @@ class TaskManager(QObject):
         else:
             # some signals to inform user
             print("ALL TASKS ENDED")
+            self.allTaskEnded.emit()
+            self.progressBarUpdate.emit(100, 100) # make sure it's not stuck at 99
             self.timer.stop()

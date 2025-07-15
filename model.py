@@ -14,14 +14,17 @@ class Model(QObject):
     timesUpdate = pyqtSignal(tuple)
     startNextTask = pyqtSignal(int)
     runStarted = pyqtSignal(dict)
+    allTaskEnded = pyqtSignal()
 
     def __init__(self):
         super(Model, self).__init__()
         self.tasks = [] # [[item, task object], [...]]
         self.task_manager = TaskManager() # will be used to hold the TaskManager object
+        self.task_manager.connect_to_arduino()
         self.task_manager.progressBarUpdate.connect(lambda task, total: self.progressBarUpdate.emit(task, total))
         self.task_manager.startNextTask.connect(lambda index: self.startNextTask.emit(index))
         self.task_manager.timesUpdate.connect(lambda times: self.timesUpdate.emit(times))
+        self.task_manager.allTaskEnded.connect(self.end)
 
         self.current_mode = 1
         self.current_button = 1
@@ -78,6 +81,11 @@ class Model(QObject):
                     elif setting == 5:
                         settings["duration"] = value
 
+        # change nonetype values to 0
+        for key, value in settings.items():
+            if value is None:
+                settings[key] = 0
+                
         # check for inconsistencies
         if settings["min_stretch"] == settings["max_stretch"]:
             Dialog("min stretch equals max stretch, so no stretch")
@@ -85,17 +93,12 @@ class Model(QObject):
         if settings["min_stretch"] > settings["max_stretch"]:
             Dialog("Please set max stretch higher than min stretch")
             return
-        if settings["freq"] == 0:
+        if settings["freq"] == 0 and settings["mode"] != 1:
             Dialog("We need some frequency")
             return
         if settings["freq"] > 2:
             Dialog("Frequency too high, please don't try to break the stretcher")
             return
-
-        # change nonetype values to 0
-        for key, value in settings.items():
-            if value is None:
-                settings[key] = 0
 
         # then ask task manager to create an object with those values
         self.create_task_object(settings)
@@ -148,6 +151,12 @@ class Model(QObject):
             return 1
         else:
             return 0
+        
+    def end(self):
+        self.run_state["running"] = False
+        self.run_state["paused"] = False
+        self.allTaskEnded.emit()
+        
 
     def stepper_togo_changed(self):
         # When applying a value (mm or %), affect the other one
