@@ -1,0 +1,2 @@
+- Limiter le max stretch input pour éviter les dégats
+- Corriger le problème de pause impossible après une tache terminée

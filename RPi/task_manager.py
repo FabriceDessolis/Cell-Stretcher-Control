@@ -1,4 +1,4 @@
-from arduino import Arduino
+from esp import ESP
 from methods import *
 from PyQt5.QtCore import *
 
@@ -9,8 +9,8 @@ class TaskManager(QObject):
     startNextTask = pyqtSignal(int)
     allTaskEnded = pyqtSignal()
     
-    def connect_to_arduino(self):
-        self.arduino = Arduino()
+    def connect_to_ESP(self):
+        self.ESP = ESP()
 
     def init(self, task_list):
         print("TASK MANAGER")
@@ -52,14 +52,14 @@ class TaskManager(QObject):
             self.times_track["total"]["start_time"] = self.times_track["task"]["start_time"]
             self.times_track["total"]["end_time"] = self.times_track["total"]["start_time"] + self.times_track["total"]["duration"]
 
-        self.arduino.start_task(self.tasks[self.running_task])
+        self.ESP.start_task(self.tasks[self.running_task])
 
     def pause_process(self):
         # Store the epoch when the program was paused
         self.times_track["pause"] = QDateTime.currentSecsSinceEpoch()
         # Stop the QTimer
         self.timer.stop()
-        self.arduino.pause()
+        self.ESP.pause()
 
     def resume_process(self):
         # Get the duration the process was paused and add it to the previously stored times
@@ -70,11 +70,11 @@ class TaskManager(QObject):
                 item["end_time"] += pause_duration
         # Restart the QTimer
         self.timer.start()
-        self.arduino.resume()
+        self.ESP.resume()
 
     def abort_process(self):
         self.timer.stop()
-        self.arduino.abort()
+        self.ESP.abort()
 
     def check_remaining_time(self):
         """
@@ -113,7 +113,7 @@ class TaskManager(QObject):
             self.task_ended()
 
     def task_ended(self):
-        # Do some arduino things
+        # Do some ESP things
         # Check if there are other tasks, if so, change task
         if len(self.tasks) > (self.running_task + 1):
             print("GO TO NEXT TASK")

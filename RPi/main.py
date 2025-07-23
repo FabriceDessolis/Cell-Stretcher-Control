@@ -12,7 +12,8 @@ def main():
     Presenter(view, model)
 
     view.show()
-    sys.exit(app.exec())
+    app.exec()
+    model.task_manager.ESP._disconnect()
 
 if __name__ == '__main__':
     main()

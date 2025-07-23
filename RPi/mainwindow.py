@@ -215,6 +215,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def hide_numberpad(self):
         self.pad.hide()
 
+    def update_stepper_position(self, position):
+        # Position is a string of the step position
+
+        self.label_pos_mm.setText()
+        self.label_pos_percent.setText()
+        self.label_pos_steps.setText(position)
 """
     def closeEvent(self):
         sys.exit(0)

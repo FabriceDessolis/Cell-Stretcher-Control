@@ -10,11 +10,12 @@ class Presenter:
         self.model = model
         self.model.giveTaskToView.connect(lambda item, task: self.view.create_task(item, task))
         self.model.removeTaskFromView.connect(lambda item: self.view.remove_task(item))
-        self.model.progressBarUpdate.connect(lambda task, total: self.view.update_progress_bar(task, total))
-        self.model.timesUpdate.connect(lambda times: self.view.update_times(times))
-        self.model.startNextTask.connect(lambda index: self.view.start_next_task(index))
+        self.model.task_manager.progressBarUpdate.connect(lambda task, total: self.view.update_progress_bar(task, total))
+        self.model.task_manager.timesUpdate.connect(lambda times: self.view.update_times(times))
+        self.model.task_manager.startNextTask.connect(lambda index: self.view.start_next_task(index))
         self.model.runStarted.connect(lambda run_state: self.view.start_pause_abort(run_state))
         self.model.allTaskEnded.connect(self.end)
+        self.model.task_manager.ESP.stepperPosition.connect(lambda position: self.view.update_stepper_position(position))
 
         for i in self.model.settings_buttons.values():
             for j in i:
@@ -36,7 +37,8 @@ class Presenter:
         self.view.pushButton_4.clicked.connect(self.test)
         self.view.pushButton_start.clicked.connect(self.start_pause)
         self.view.pushButton_abort.clicked.connect(self.abort)
-        self.view.pushButton_stepper_go.clicked.connect(self.model.stepper_go)
+        self.view.pushButton_stepper_go.clicked.connect(lambda: self.model.stepper_go(False))
+        self.view.pushButton_stepper_go_zero.clicked.connect(lambda: self.model.stepper_go(True)) # true to go to zero
 
     def test(self):
         print(self.model.tasks)
@@ -140,4 +142,3 @@ class Presenter:
                 self.view.clean_after_abort()
                 self.model.task_manager.abort_process()
                 self.view.start_pause_abort(self.model.run_state)
-

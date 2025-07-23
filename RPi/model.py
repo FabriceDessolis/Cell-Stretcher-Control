@@ -5,6 +5,9 @@ from methods import *
 from task_manager import TaskManager
 from pop_up_dialog import Dialog
 
+
+MAX_STRETCH = 30 # max stretch to prevent the arm's collision
+
 class Model(QObject):
     """ This stores all the settings that were input in the mainwindow,
         and it creates and manages tasks objects """
@@ -20,10 +23,7 @@ class Model(QObject):
         super(Model, self).__init__()
         self.tasks = [] # [[item, task object], [...]]
         self.task_manager = TaskManager() # will be used to hold the TaskManager object
-        self.task_manager.connect_to_arduino()
-        self.task_manager.progressBarUpdate.connect(lambda task, total: self.progressBarUpdate.emit(task, total))
-        self.task_manager.startNextTask.connect(lambda index: self.startNextTask.emit(index))
-        self.task_manager.timesUpdate.connect(lambda times: self.timesUpdate.emit(times))
+        self.task_manager.connect_to_ESP()
         self.task_manager.allTaskEnded.connect(self.end)
 
         self.current_mode = 1
@@ -87,6 +87,9 @@ class Model(QObject):
                 settings[key] = 0
                 
         # check for inconsistencies
+        if settings["max_stretch"] > MAX_STRETCH:
+            Dialog("The max stretch can't go over %s %%" % MAX_STRETCH)
+            return
         if settings["min_stretch"] == settings["max_stretch"]:
             Dialog("min stretch equals max stretch, so no stretch")
             return
@@ -97,7 +100,7 @@ class Model(QObject):
             Dialog("We need some frequency")
             return
         if settings["freq"] > 2:
-            Dialog("Frequency too high, please don't try to break the stretcher")
+            Dialog("Frequency too high,\nplease don't try to break the stretcher")
             return
 
         # then ask task manager to create an object with those values
@@ -133,6 +136,9 @@ class Model(QObject):
         self.tasks = provisional_tasklist
 
     def start(self, items_order: list):
+        if not self.task_manager.ESP.connected :
+            Dialog("Please connect to the ESP first")
+            return
         # rearrange tasks in the right order
         self.organize_tasks(items_order)
 
@@ -143,7 +149,7 @@ class Model(QObject):
             tasks.append(i[1])
         days, hours, minutes = calculate_duration(tasks)
         accepted = Dialog("Confirm start operation ?\nTotal time : %s days %s hours %s minutes" % (days, hours, minutes), True).result
-        # send to a task manager that will count time and send tasks to arduino when they are ready
+        # send to a task manager that will count time and send tasks to ESP when they are ready
         if accepted:
             self.task_manager.init(tasks)
             self.run_state["running"] = True
@@ -162,6 +168,7 @@ class Model(QObject):
         # When applying a value (mm or %), affect the other one
         # 1mm = 10% for a l0 of 10mm
         val = self.settings_values[self.current_button]
+        print(val)
         if self.current_button == 60:
             affected_val = val * 10
         elif self.current_button == 61:
@@ -178,17 +185,23 @@ class Model(QObject):
 
         return affected_button, affected_val
 
-    def stepper_go(self):
+    def stepper_go(self, zero):
+        # First check conditions
         if self.run_state["running"] is True and self.run_state["paused"] is False:
-            Dialog("A process is currently running, please pause it first to move manually")
+            Dialog("A process is currently running,\nplease pause it first to move manually")
             return
-        if self.settings_values[60] is None:
+
+        if zero:
+            self.task_manager.ESP.go_to_position(0)
+            return
+
+        if self.settings_values[60] is None or self.settings_values[61] is None:
             Dialog("Enter distance to go first")
             return
-        # go somewhere
-
-    def send_to_arduino(self):
-        ...
+        if self.settings_values[61] > MAX_STRETCH:
+            Dialog("The max stretch can't go over %s %%" % MAX_STRETCH)
+            return
+        self.task_manager.ESP.go_to_position(self.settings_values[61])
 
 
 class Task:

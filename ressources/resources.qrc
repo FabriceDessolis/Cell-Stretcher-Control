@@ -1,6 +1,20 @@
 <RCC>
   <qresource prefix="icons">
+    <file>icons/move_s.svg</file>
+    <file>icons/move.svg</file>
     <file>icons/ramp.svg</file>
+    <file>icons/poweroff_s.svg</file>
+    <file>icons/poweroff.svg</file>
+    <file>icons/settings_s.svg</file>
+    <file>icons/settings.svg</file>
+    <file>icons/monitor_s.svg</file>
+    <file>icons/monitor.svg</file>
+    <file>icons/planner_s.svg</file>
+    <file>icons/planner.svg</file>
+    <file>icons/run_s.svg</file>
+    <file>icons/run.svg</file>
+    <file>icons/disconnected.svg</file>
+    <file>icons/connected.svg</file>
     <file>icons/ramp_s.svg</file>
     <file>icons/index.png</file>
     <file>icons/hold_up.svg</file>
