@@ -20,6 +20,30 @@ Task::Task(int stepPin, int dirPin, int enPin)
 
     digitalWrite(m_enPin, HIGH); // HIGH = not enabled
     digitalWrite(m_dirPin, HIGH);
+
+    xTaskCreatePinnedToCore(
+        Task::emitPosition,
+        "position emitter",
+        10000,
+        this,
+        2,
+        &m_positionHandle,
+        0
+    );
+}
+
+void Task::emitPosition(void* param)
+{
+    Task* self = static_cast<Task*>(param);
+    for (;;)
+    {
+        if (self->stepper.currentPosition() != self->current_position)
+        {
+            self->current_position = self->stepper.currentPosition();
+            Serial1.println('<'+String(self->current_position)+'>');
+        }
+        vTaskDelay(200);
+    }
 }
 
 void Task::startTask(int mode, float* params, char* duration)

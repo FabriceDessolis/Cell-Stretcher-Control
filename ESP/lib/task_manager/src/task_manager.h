@@ -41,6 +41,7 @@ class Task
         
         static constexpr int checkInterval {1000000}; // check interval to call esp_timer_get_time() to stop a task
 
+        long current_position {0};
         int min_steps;
         int max_steps;
         int total_steps;
@@ -72,8 +73,10 @@ class Task
 
         // RTOS
         void startRTOS(int mode);
+        static void emitPosition(void* param);
         static void taskFunction(void* param);
         TaskHandle_t m_taskHandle = nullptr;
+        TaskHandle_t m_positionHandle = nullptr;
 
         struct TaskParam
         {

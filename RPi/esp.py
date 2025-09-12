@@ -11,6 +11,7 @@ TIMEOUT = 2
 
 class ESP(QObject):
     stepperPosition = pyqtSignal(str)
+
     def __init__(self):
         super(ESP, self).__init__()
         print("ESP init")
