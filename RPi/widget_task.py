@@ -39,26 +39,25 @@ class TaskWidget(QWidget, Ui_Form):
     def set_settings(self):
         S = "S" + str(self.min_stretch) + "-" + str(self.max_stretch)
         settings = S
-        if self.freq is not None:
+        if self.mode != 1:
             F = "F" + str(self.freq)
             settings += "\n"+F
         else:
             settings += "\n"
-        if self.ramp is not None:
+        if self.mode == 3:
             R = "R" + str(self.ramp)
             settings += "\n"+R
-        if self.hold is not None :
+        if self.mode == 4 or self.mode == 5:
             H = "H" + str(self.hold)
             settings += "\n"+H
-        if self.hold is None and self.ramp is None:
-            settings += "\n"
         self.label_2.setText(settings)
+        print(settings)
         
     def set_duration(self):
         self.label_3.setText(self.duration[0] + self.duration[1] + "D\n" + self.duration[2] + self.duration[3] + "H\n" + self.duration[4] + self.duration[5] + "M")
 
     def is_selected(self, selected):
         if selected:
-            self.frame.setStyleSheet("QFrame{background-color: rgb(47,51,60);} QFrame#frame{border: 2px solid black;}")
+            self.frame.setStyleSheet("background-color: rgb(47,51,60);")
         else:
-            self.frame.setStyleSheet("QFrame{background-color: rgb(30,34,43);} QFrame#frame{border: None;}")
+            self.frame.setStyleSheet("background-color: rgb(30,34,43);")

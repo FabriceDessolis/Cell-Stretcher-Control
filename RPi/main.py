@@ -2,6 +2,8 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from model import Model
 from presenter import Presenter
+import numpy
+import pyqtgraph
 
 def main():
     app = QApplication(sys.argv)

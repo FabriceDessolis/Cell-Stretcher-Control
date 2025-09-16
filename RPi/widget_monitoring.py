@@ -7,12 +7,14 @@ import time
 import serial
 from pyqtgraph.Qt import QtCore, QtGui
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import *
 import pyqtgraph as pg
 import threading
 
 
 class MonitoringWidget(QFrame, QObject):
+    sensorValues = pyqtSignal(float, float)
+    
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -23,7 +25,7 @@ class MonitoringWidget(QFrame, QObject):
         self.x = []
         self.data = [[], []]  # temp, humidity
         self.times_storage = []
-        self.flush_storage_delay = 5000  # ms
+        self.flush_storage_delay = 1000  # ms
         self.run_loop = True
         self.flush_counter = 0
 
@@ -50,7 +52,9 @@ class MonitoringWidget(QFrame, QObject):
         pg.graphicsItems.DateAxisItem.makeSStepper(500)
 
         # === Combined Temperature and Humidity Plot ===
-        self.p1 = self.plot_widget.addPlot(title="Temperature & Humidity")
+        self.p1 = self.plot_widget.addPlot(title='<span style="color:red">Temperature</span>'
+                                                 ' '
+                                                 '<span style="color:blue">Humidity</span>')
         self.p1.showGrid(x=True, y=True)
         self.p1.setAxisItems(axisItems={"bottom": pg.DateAxisItem(utcOffset=self.utc_offset)})
 
@@ -71,8 +75,9 @@ class MonitoringWidget(QFrame, QObject):
     def calculate_values(self):
         try:
             temperature, pression, humidity = bme280.readBME280All()
-            temperature = round(temperature, 2)
-            humidity = round(humidity, 2)
+            temperature = round(temperature, 1)
+            humidity = round(humidity, 1)
+            self.sensorValues.emit(temperature, humidity)
         except Exception as e:
             print("Error reading BME280:", e)
             temperature = 0

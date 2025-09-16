@@ -50,7 +50,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.pad.closeWidget.connect(self.hide_numberpad)
 
         self.monitoring = MonitoringWidget(parent=self.frame_monitoring)
-        self.frame_monitoring.setLayout(self.gridLayout_monitoring)
+        self.monitoring.sensorValues.connect(lambda temperature, humidity: self.update_sensor_values(temperature, humidity))
+        #self.frame_monitoring.setLayout(self.gridLayout_monitoring)
         
         self.listWidget = ListWidget()
         self.setup_list_widget()
@@ -67,8 +68,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # this is a workaround for a pyqt bug deleting items when being dragged
         self.gridLayout_list = QGridLayout(self.frame_list)
         self.gridLayout_list.setContentsMargins(0, 0, 0, 0)
-        self.gridLayout_list.setHorizontalSpacing(6)
-        self.gridLayout_list.setVerticalSpacing(6)
+        self.gridLayout_list.setHorizontalSpacing(0)
+        self.gridLayout_list.setVerticalSpacing(0)
         self.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.listWidget.setItemAlignment(Qt.AlignCenter)
         self.gridLayout_list.addWidget(self.listWidget)
@@ -222,10 +223,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def update_stepper_position(self, position):
         # Position is a string of the step position
-
         self.label_pos_mm.setText()
         self.label_pos_percent.setText()
         self.label_pos_steps.setText(position)
+        
+    def update_sensor_values(self, temperature, humidity):
+        self.label_temp.setText(f'{temperature}°')
+        self.label_humidity.setText(f'{humidity}%')
+
 """
     def closeEvent(self):
         sys.exit(0)
@@ -255,8 +260,8 @@ class ProgressTaskWidget(QWidget):
         self.task = TaskWidget(widget.settings)
 
         self.verticalLayout = QVBoxLayout()
-        self.verticalSpacer = QSpacerItem(20, 56, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.verticalSpacer2 = QSpacerItem(20, 56, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer2 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.label = QLabel("")
         self.label.setAlignment(Qt.AlignCenter)
         
