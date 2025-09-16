@@ -7,6 +7,7 @@ from PyQt5.QtCore import *
 from ressources.view import Ui_MainWindow
 from widget_numberpad import NumberPad
 from widget_task import TaskWidget
+from widget_monitoring import MonitoringWidget
 from pop_up_dialog import Dialog
 
 class Styles(object):
@@ -45,8 +46,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.pad = NumberPad()
         self.pad.setWindowModality(Qt.ApplicationModal)
+        self.pad.setWindowFlag(Qt.FramelessWindowHint)
         self.pad.closeWidget.connect(self.hide_numberpad)
 
+        self.monitoring = MonitoringWidget(parent=self.frame_monitoring)
+        self.frame_monitoring.setLayout(self.gridLayout_monitoring)
+        
         self.listWidget = ListWidget()
         self.setup_list_widget()
         self.listWidget.itemPressed.connect(lambda item: self.item_selected(item))
@@ -210,7 +215,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def show_numberpad(self):
         self.pad.show()
-        self.pad.move(self.pos() + QPoint(200, 70))
+        self.pad.move(self.pos() + QPoint(200, 50))
 
     def hide_numberpad(self):
         self.pad.hide()
